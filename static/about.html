@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>About · LCRA Hydromet</title>
+  <meta name="description" content="About the LCRA Hydromet dashboard — what it is, where the data comes from, and who built it." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="About · LCRA Hydromet" />
+  <meta property="og:description" content="A real-time dashboard for the Lower Colorado River basin. Built by Kenny Gorman." />
+  <meta property="og:url" content="https://lcra-hydromet.onrender.com/about" />
+  <meta property="og:image" content="https://lcra-hydromet.onrender.com/og-image.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="https://lcra-hydromet.onrender.com/og-image.png" />
+  <meta name="theme-color" content="#060912" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 3 C 8 15, 6 21, 16 29 C 26 21, 24 15, 16 3 Z' fill='%235ec8f7'/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="bg-orb bg-orb-1"></div>
+  <div class="bg-orb bg-orb-2"></div>
+  <div class="bg-orb bg-orb-3"></div>
+
+  <header class="topbar">
+    <a class="brand" href="/" style="text-decoration:none; color:inherit;">
+      <svg class="logo" viewBox="0 0 32 32" fill="none">
+        <path d="M16 3 C 8 15, 6 21, 16 29 C 26 21, 24 15, 16 3 Z" fill="url(#waterGrad)" />
+        <defs>
+          <linearGradient id="waterGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#5ec8f7"/>
+            <stop offset="100%" stop-color="#2563eb"/>
+          </linearGradient>
+        </defs>
+      </svg>
+      <div>
+        <div class="brand-title">LCRA Hydromet</div>
+        <div class="brand-sub">Lower Colorado River Authority · Live</div>
+      </div>
+    </a>
+    <nav class="nav-links">
+      <a class="nav-link" href="/">Dashboard</a>
+      <a class="nav-link" href="/learn">Learn</a>
+      <a class="nav-link active" href="/about">About</a>
+    </nav>
+  </header>
+
+  <main class="about-main">
+    <section class="panel about-hero">
+      <div class="eyebrow">ABOUT THIS DASHBOARD</div>
+      <h1>A live window into the Lower Colorado.</h1>
+      <p class="lede">
+        Real-time water levels, dam operations, river gauges, and rainfall for the Highland Lakes
+        and the Lower Colorado River basin in Central Texas. Built because watching the river
+        rise and the lakes fill — or empty — shouldn't require clicking through a maze of PDFs.
+      </p>
+    </section>
+
+    <div class="about-grid">
+      <section class="panel">
+        <div class="eyebrow">DATA SOURCE</div>
+        <h2>hydromet.lcra.org</h2>
+        <p>
+          Every chart on this site is rendered from
+          <a href="https://hydromet.lcra.org" target="_blank" rel="noopener">LCRA's public Hydromet system</a>,
+          a network of 275+ automated river and weather gauges across the basin. The dashboard polls
+          six endpoints in parallel and re-renders every 60 seconds — no local database, no caching layer,
+          no pre-aggregation. What you see is what LCRA published.
+        </p>
+        <ul class="bare">
+          <li><span class="mono">FloodStatus/GetLakeLevelsGateOps</span> — head/tail elevation + floodgate ops</li>
+          <li><span class="mono">FloodStatus/GetNarrativeSummary</span> — operations narrative</li>
+          <li><span class="mono">GetForecastReferences</span> — river forecast sites</li>
+          <li><span class="mono">GetLakeLevelsForAllSites</span> — all lake-level gauges</li>
+          <li><span class="mono">GetStageFlowForAllSites</span> — all river stage / flow gauges</li>
+          <li><span class="mono">GetRainfallForAllSites</span> — rainfall stations across the basin</li>
+        </ul>
+      </section>
+
+      <section class="panel">
+        <div class="eyebrow">HOW IT'S BUILT</div>
+        <h2>Open source, top to bottom.</h2>
+        <ul class="bare">
+          <li><strong>D3.js</strong> · all charts hand-drawn</li>
+          <li><strong>FastAPI</strong> + <strong>httpx</strong> · async pass-through proxy</li>
+          <li><strong>Render</strong> · deploy from <code>render.yaml</code> blueprint</li>
+          <li><strong>No build step</strong> · single HTML + CSS + JS file, served as-is</li>
+        </ul>
+        <p>
+          Source on
+          <a href="https://github.com/kgorman/lcra-hydromet" target="_blank" rel="noopener">GitHub</a>.
+        </p>
+      </section>
+
+      <section class="panel about-author">
+        <div class="eyebrow">WHO BUILT IT</div>
+        <h2>Kenny Gorman</h2>
+        <p class="subtitle">Head of Streaming Products at MongoDB · Austin, TX</p>
+        <p>
+          I'm a builder and technical leader at the intersection of databases, streaming data, and
+          developer infrastructure. Currently I lead
+          <a href="https://www.mongodb.com/products/platform/atlas-stream-processing" target="_blank" rel="noopener">Atlas Stream Processing</a>
+          at MongoDB.
+        </p>
+        <p>
+          I co-founded <a href="https://eventador.io" target="_blank" rel="noopener">Eventador.io</a>,
+          an enterprise streaming platform on Apache Kafka and Flink (acquired by Cloudera in 2020),
+          and <a href="https://objectrocket.com" target="_blank" rel="noopener">ObjectRocket</a>,
+          a managed MongoDB service (acquired by Rackspace in 2012). I'm an early MongoDB adopter
+          and the author of <a href="https://www.mongodb.com/docs/database-tools/mongostat/" target="_blank" rel="noopener">mongostat</a>.
+        </p>
+        <p>
+          This dashboard is a personal project — I live in the basin, I watch the lakes, and I wanted
+          a single page that showed me what was happening right now.
+        </p>
+        <div class="links">
+          <a class="link-pill" href="https://www.linkedin.com/in/kgorman/" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M20.5 2h-17A1.5 1.5 0 002 3.5v17A1.5 1.5 0 003.5 22h17a1.5 1.5 0 001.5-1.5v-17A1.5 1.5 0 0020.5 2zM8 19H5v-9h3zM6.5 8.25A1.75 1.75 0 118.3 6.5a1.78 1.78 0 01-1.8 1.75zM19 19h-3v-4.74c0-1.42-.6-1.93-1.38-1.93A1.74 1.74 0 0013 14.19a.66.66 0 000 .14V19h-3v-9h2.9v1.3a3.11 3.11 0 012.7-1.4c1.55 0 3.36.86 3.36 3.66z"/></svg>
+            LinkedIn
+          </a>
+          <a class="link-pill" href="https://github.com/kgorman" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.56v-2c-3.2.69-3.88-1.36-3.88-1.36-.53-1.34-1.29-1.7-1.29-1.7-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.71 1.26 3.37.96.1-.75.4-1.26.73-1.55-2.55-.29-5.23-1.28-5.23-5.7 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.47.11-3.06 0 0 .97-.31 3.18 1.18a11.04 11.04 0 015.78 0c2.21-1.5 3.18-1.18 3.18-1.18.63 1.59.23 2.77.11 3.06.74.81 1.19 1.84 1.19 3.1 0 4.43-2.69 5.41-5.25 5.69.41.36.78 1.05.78 2.12v3.15c0 .31.21.67.8.56C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5z"/></svg>
+            GitHub
+          </a>
+          <a class="link-pill" href="https://kennygorman.dev" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg>
+            kennygorman.dev
+          </a>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="eyebrow">DISCLAIMER</div>
+        <h2>Not an official source.</h2>
+        <p>
+          This site reflects data from LCRA's public Hydromet system but is not affiliated with
+          or endorsed by the Lower Colorado River Authority. For official advisories during a
+          flood event, defer to <a href="https://www.lcra.org/water/flood/" target="_blank" rel="noopener">lcra.org/water/flood</a>
+          and your local emergency management office. Don't drive into flooded roadways —
+          <em>turn around, don't drown.</em>
+        </p>
+      </section>
+    </div>
+  </main>
+
+  <footer>
+    <span>Source: <a href="https://hydromet.lcra.org" target="_blank" rel="noopener">hydromet.lcra.org</a></span>
+    <span class="dot">·</span>
+    <a href="/">Live dashboard</a>
+    <span class="dot">·</span>
+    <a href="/learn">How it works</a>
+    <span class="dot">·</span>
+    <a href="https://github.com/kgorman/lcra-hydromet" target="_blank" rel="noopener">Source on GitHub</a>
+  </footer>
+</body>
+</html>

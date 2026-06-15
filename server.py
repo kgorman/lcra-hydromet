@@ -11,7 +11,7 @@ from pathlib import Path
 
 import httpx
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.types import Scope
 
@@ -80,8 +80,21 @@ async def proxy(name: str):
     return JSONResponse(data, headers=NO_STORE)
 
 
+STATIC_DIR = Path(__file__).parent / "static"
+
+
+@app.get("/about")
+async def about_page():
+    return FileResponse(STATIC_DIR / "about.html", headers={"Cache-Control": "no-cache, must-revalidate"})
+
+
+@app.get("/learn")
+async def learn_page():
+    return FileResponse(STATIC_DIR / "learn.html", headers={"Cache-Control": "no-cache, must-revalidate"})
+
+
 # Static dashboard (mounted last so /api routes win).
-app.mount("/", NoCacheStaticFiles(directory=Path(__file__).parent / "static", html=True))
+app.mount("/", NoCacheStaticFiles(directory=STATIC_DIR, html=True))
 
 
 if __name__ == "__main__":
