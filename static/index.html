@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LCRA Hydromet — Live</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="bg-orb bg-orb-1"></div>
+  <div class="bg-orb bg-orb-2"></div>
+  <div class="bg-orb bg-orb-3"></div>
+
+  <header class="topbar">
+    <div class="brand">
+      <svg class="logo" viewBox="0 0 32 32" fill="none">
+        <path d="M16 3 C 8 15, 6 21, 16 29 C 26 21, 24 15, 16 3 Z" fill="url(#waterGrad)" />
+        <defs>
+          <linearGradient id="waterGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#5ec8f7"/>
+            <stop offset="100%" stop-color="#2563eb"/>
+          </linearGradient>
+        </defs>
+      </svg>
+      <div>
+        <div class="brand-title">LCRA Hydromet</div>
+        <div class="brand-sub">Lower Colorado River Authority · Live</div>
+      </div>
+    </div>
+    <div class="status-cluster">
+      <div class="kpi" id="kpi-lakes">
+        <div class="kpi-label">Highland Lakes</div>
+        <div class="kpi-value">6 dams</div>
+      </div>
+      <div class="kpi" id="kpi-gates">
+        <div class="kpi-label">Gate Ops</div>
+        <div class="kpi-value">—</div>
+      </div>
+      <div class="kpi" id="kpi-stage">
+        <div class="kpi-label">River Gauges</div>
+        <div class="kpi-value">—</div>
+      </div>
+      <div class="kpi" id="kpi-rain">
+        <div class="kpi-label">Rainfall 24h</div>
+        <div class="kpi-value">—</div>
+      </div>
+      <div class="live">
+        <span class="live-dot"></span>
+        <span class="live-text">LIVE</span>
+        <span class="live-clock" id="live-clock">—</span>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="panel hero">
+      <div class="panel-head">
+        <h2>Highland Lakes Chain</h2>
+        <div class="panel-sub">Reservoir elevation &amp; floodgate status · upstream → downstream</div>
+      </div>
+      <div id="chain"></div>
+    </section>
+
+    <div class="grid">
+      <section class="panel">
+        <div class="panel-head">
+          <h2>River Gauges</h2>
+          <div class="panel-sub">Current stage vs. flood stage</div>
+        </div>
+        <div id="rivers"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Rainfall · last 24 h</h2>
+          <div class="panel-sub">By contributing basin</div>
+        </div>
+        <div id="rain"></div>
+      </section>
+    </div>
+
+    <section class="panel" id="narrative-panel">
+      <div class="panel-head">
+        <h2>Flood Operations Narrative</h2>
+        <div class="panel-sub" id="narrative-time">—</div>
+      </div>
+      <div id="narrative"></div>
+    </section>
+  </main>
+
+  <footer>
+    <span>Source: <a href="https://hydromet.lcra.org" target="_blank" rel="noopener">hydromet.lcra.org</a></span>
+    <span class="dot">·</span>
+    <span>Auto-refresh every 60 s · no cache</span>
+    <span class="dot">·</span>
+    <span id="last-fetched">Last fetched: —</span>
+  </footer>
+
+  <div class="tooltip" id="tip"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+  <script src="/dashboard.js" type="module"></script>
+</body>
+</html>
