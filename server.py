@@ -13,6 +13,16 @@ import httpx
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.types import Scope
+
+
+class NoCacheStaticFiles(StaticFiles):
+    """Force browsers to revalidate static assets so fixes ship immediately."""
+
+    async def get_response(self, path: str, scope: Scope):
+        resp = await super().get_response(path, scope)
+        resp.headers["Cache-Control"] = "no-cache, must-revalidate"
+        return resp
 
 LCRA = "https://hydromet.lcra.org"
 TIMEOUT = httpx.Timeout(20.0, connect=5.0)
@@ -71,7 +81,7 @@ async def proxy(name: str):
 
 
 # Static dashboard (mounted last so /api routes win).
-app.mount("/", StaticFiles(directory=Path(__file__).parent / "static", html=True))
+app.mount("/", NoCacheStaticFiles(directory=Path(__file__).parent / "static", html=True))
 
 
 if __name__ == "__main__":

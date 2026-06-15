@@ -48,6 +48,8 @@ function classifyGate(text) {
 }
 
 // ---------- Highland Lakes chain ----------
+const MOBILE_BREAKPOINT = 760;
+
 function renderChain(damsData) {
   if (!damsData?.records) return;
   const byDam = new Map(damsData.records.map(r => [r.dam, r]));
@@ -56,8 +58,22 @@ function renderChain(damsData) {
   root.selectAll("*").remove();
 
   const W = root.node().clientWidth;
+  if (W < MOBILE_BREAKPOINT) renderChainVertical(root, byDam, W);
+  else                       renderChainHorizontal(root, byDam, W);
+
+  // Update KPI counters
+  const gateCounts = damsData.records.map(r => classifyGate(r.gateOps));
+  const active = gateCounts.filter(c => c === "bad").length;
+  const monitoring = gateCounts.filter(c => c === "warn").length;
+  d3.select("#kpi-gates .kpi-value").text(
+    active > 0 ? `${active} active` :
+    monitoring > 0 ? `${monitoring} watch` :
+    "all closed"
+  );
+}
+
+function renderChainHorizontal(root, byDam, W) {
   const N = LAKES.length;
-  // Card width: fit cards + connector gutters
   const GUTTER = 30;
   const totalGutter = GUTTER * (N - 1);
   const cardW = Math.floor((W - totalGutter - 8) / N);
@@ -255,16 +271,179 @@ function renderChain(damsData) {
       .on("mousemove", moveTip)
       .on("mouseleave", hideTip);
   });
+}
 
-  // Update KPI counters
-  const gateCounts = damsData.records.map(r => classifyGate(r.gateOps));
-  const active = gateCounts.filter(c => c === "bad").length;
-  const monitoring = gateCounts.filter(c => c === "warn").length;
-  d3.select("#kpi-gates .kpi-value").text(
-    active > 0 ? `${active} active` :
-    monitoring > 0 ? `${monitoring} watch` :
-    "all closed"
-  );
+// Vertical / mobile chain layout — cards stacked top→bottom with downward flow.
+function renderChainVertical(root, byDam, W) {
+  const N = LAKES.length;
+  const cardH = 132;       // shorter card, full width
+  const GAP   = 28;        // vertical gap between cards (for connector)
+  const padX  = 16;
+  const H = N * cardH + (N - 1) * GAP + 16;
+
+  const svg = root.append("svg")
+    .attr("width", W).attr("height", H)
+    .attr("viewBox", `0 0 ${W} ${H}`);
+
+  // Vertical flow connectors between cards
+  for (let i = 0; i < N - 1; i++) {
+    const y1 = 8 + (i + 1) * cardH + i * GAP;
+    const y2 = y1 + GAP;
+    const x = W / 2;
+    const mid = (y1 + y2) / 2;
+    svg.append("path")
+      .attr("class", "flow-line")
+      .attr("d", `M ${x} ${y1} C ${x - 8} ${mid}, ${x + 8} ${mid}, ${x} ${y2}`);
+    svg.append("path")
+      .attr("class", "flow-arrow")
+      .attr("d", `M ${x - 4} ${y2 - 6} L ${x} ${y2} L ${x + 4} ${y2 - 6} Z`);
+  }
+
+  const cards = svg.selectAll(".dam-card")
+    .data(LAKES, d => d.dam)
+    .join("g")
+      .attr("class", "dam-card")
+      .attr("transform", (_, i) => `translate(0, ${8 + i * (cardH + GAP)})`);
+
+  cards.append("rect")
+    .attr("class", "dam-bg")
+    .attr("width", W).attr("height", cardH)
+    .attr("rx", 14).attr("ry", 14);
+
+  cards.each(function(d) {
+    const g = d3.select(this);
+    const rec = byDam.get(d.dam);
+    if (!rec) return;
+
+    const head = rec.head;
+    const tail = rec.tail;
+    const pctRaw = (head - d.low) / (d.flood - d.low);
+    const pct = Math.max(0, Math.min(1.05, pctRaw));
+    const overFlood = head > d.flood;
+    const nearConservation = head >= d.conservation - 0.2;
+    const fillColor =
+      overFlood              ? "#ec4899" :
+      nearConservation       ? "#fbbf24" :
+      pct > 0.85             ? "#5ec8f7" :
+      pct > 0.55             ? "#34d399" :
+                                "#94a3b8";
+
+    // Left accent strip
+    g.append("rect")
+      .attr("x", 0).attr("y", 0)
+      .attr("width", 4).attr("height", cardH)
+      .attr("fill", fillColor)
+      .attr("opacity", 0.85);
+
+    // Left column: lake + dam name
+    g.append("text")
+      .attr("class", "lake-name")
+      .attr("x", padX).attr("y", 22)
+      .text(`LAKE ${d.lake.toUpperCase()}`);
+    g.append("text")
+      .attr("class", "dam-name")
+      .attr("x", padX).attr("y", 42)
+      .text(`${d.displayDam ?? d.dam} Dam`);
+
+    // Right column: big elevation, right-aligned
+    g.append("text")
+      .attr("class", "elev-value")
+      .attr("x", W - padX).attr("y", 36)
+      .attr("text-anchor", "end")
+      .text(head != null ? head.toFixed(2) : "—");
+    g.append("text")
+      .attr("class", "elev-unit")
+      .attr("x", W - padX).attr("y", 54)
+      .attr("text-anchor", "end")
+      .text("ft MSL · head");
+
+    // Mid row: gate pill (left) + range fill % + Δ cons (right)
+    const gateClass = classifyGate(rec.gateOps);
+    const gateText =
+      gateClass === "good" ? "GATES CLOSED" :
+      gateClass === "warn" ? "MONITORING"   :
+                              "GATES ACTIVE";
+    const pillG = g.append("g").attr("transform", `translate(${padX}, 64)`);
+    const ppadX = 10, pillH = 22;
+    const ptW = gateText.length * 6.6 + 8;
+    pillG.append("rect")
+      .attr("class", `gate-pill-bg gate-${gateClass} gate-${gateClass}-stroke`)
+      .attr("width", ptW + ppadX * 2).attr("height", pillH)
+      .attr("rx", 11).attr("ry", 11)
+      .attr("stroke-width", 1);
+    pillG.append("text")
+      .attr("class", `gate-pill gate-${gateClass}-text`)
+      .attr("x", ppadX + (ptW + ppadX) / 2)
+      .attr("y", 15)
+      .attr("text-anchor", "middle")
+      .text(gateText);
+
+    // Right-aligned stats below elevation
+    g.append("text")
+      .attr("class", "tail-value")
+      .attr("x", W - padX).attr("y", 80)
+      .attr("text-anchor", "end")
+      .text(`range ${(pct * 100).toFixed(1)}%`);
+    const dCons = head - d.conservation;
+    g.append("text")
+      .attr("class", "tail-value")
+      .attr("x", W - padX).attr("y", 96)
+      .attr("text-anchor", "end")
+      .attr("fill", dCons > 0 ? "#fbbf24" : "#93a4c8")
+      .text(`Δ cons ${dCons >= 0 ? "+" : ""}${dCons.toFixed(2)} ft`);
+
+    // Horizontal fill bar at bottom of card
+    const barY = cardH - 18;
+    const barX1 = padX;
+    const barX2 = W - padX;
+    const barW = barX2 - barX1;
+    g.append("rect")
+      .attr("class", "fill-track")
+      .attr("x", barX1).attr("y", barY)
+      .attr("width", barW).attr("height", 6)
+      .attr("rx", 3).attr("ry", 3);
+
+    // Conservation marker on the bar
+    const xForElev = e => barX1 + ((e - d.low) / (d.flood - d.low)) * barW;
+    const xCons  = Math.max(barX1, Math.min(barX2, xForElev(d.conservation)));
+    const xFlood = barX2;
+    g.append("line").attr("class", "conservation-line")
+      .attr("y1", barY - 3).attr("y2", barY + 9)
+      .attr("x1", xCons).attr("x2", xCons);
+    g.append("line").attr("class", "flood-line")
+      .attr("y1", barY - 3).attr("y2", barY + 9)
+      .attr("x1", xFlood).attr("x2", xFlood);
+
+    const fillEnd = Math.min(barX2, Math.max(barX1, xForElev(head)));
+    g.append("rect")
+      .attr("class", "fill-bar")
+      .attr("x", barX1).attr("y", barY)
+      .attr("width", 0).attr("height", 6)
+      .attr("rx", 3).attr("ry", 3)
+      .attr("fill", fillColor)
+      .attr("opacity", 0.9)
+      .transition().duration(700).delay(100)
+      .attr("width", Math.max(2, fillEnd - barX1));
+
+    // Tap target / tooltip overlay
+    g.append("rect")
+      .attr("width", W).attr("height", cardH)
+      .attr("fill", "transparent")
+      .on("mouseenter", (event) => {
+        const html = `
+          <div class="tip-title">${d.displayDam ?? d.dam} Dam · Lake ${d.lake}</div>
+          <div class="tip-row"><span>head</span><span>${head?.toFixed(2) ?? "—"} ft</span></div>
+          <div class="tip-row"><span>tail</span><span>${(tail != null && tail > 1) ? tail.toFixed(2) + " ft" : "—"}</span></div>
+          <div class="tip-row"><span>conservation</span><span>${d.conservation} ft</span></div>
+          <div class="tip-row"><span>flood pool</span><span>${d.flood} ft</span></div>
+          <div style="margin-top:8px;color:var(--ink-dim);font-size:11px">${rec.gateOps ?? ""}</div>
+          <div style="margin-top:6px;color:var(--ink-mute);font-size:10px">Updated ${formatTime(rec.lastDataUpdate)}</div>
+        `;
+        showTip(html, event);
+      })
+      .on("mousemove", moveTip)
+      .on("mouseleave", hideTip);
+  });
 }
 
 // ---------- River gauges ----------
