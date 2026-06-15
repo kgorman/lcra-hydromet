@@ -31,6 +31,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
@@ -87,7 +89,22 @@
   <main>
     <section class="panel hero">
       <div class="panel-head">
-        <h2>Highland Lakes Chain</h2>
+        <h2>Highland Lakes · Map</h2>
+        <div class="panel-sub">Overhead view of the chain · dam markers colored by status · flow animates downstream</div>
+      </div>
+      <div id="map"></div>
+      <div class="map-legend">
+        <span class="legend-dot legend-good"></span><span class="legend-label">Gates closed</span>
+        <span class="legend-dot legend-warn"></span><span class="legend-label">Monitoring</span>
+        <span class="legend-dot legend-bad"></span><span class="legend-label">Active ops</span>
+        <span class="legend-spacer"></span>
+        <span class="legend-line"></span><span class="legend-label">River flow (animated downstream)</span>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Highland Lakes · Detail</h2>
         <div class="panel-sub">Reservoir elevation &amp; floodgate status · upstream → downstream</div>
       </div>
       <div id="chain"></div>
@@ -135,6 +152,8 @@
   <div class="tooltip" id="tip"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script src="/dashboard.js" type="module"></script>
 </body>
 </html>

@@ -17,6 +17,38 @@ const LAKES = [
 ];
 const DAM_ORDER = new Map(LAKES.map((l, i) => [l.dam, i]));
 
+// Approximate dam coordinates (lat, lng). Slight inaccuracies are fine —
+// purpose is to show the chain's spatial layout, not navigation.
+const DAM_COORDS = {
+  Buchanan:  [30.7517, -98.4097],
+  Inks:      [30.7367, -98.3719],
+  Wirtz:     [30.5594, -98.3344],   // Lake LBJ
+  Starcke:   [30.5786, -98.2722],   // Lake Marble Falls
+  Mansfield: [30.3911, -97.9094],   // Lake Travis
+  Miller:    [30.2944, -97.7861],   // Lake Austin (Tom Miller)
+  Bastrop:   [30.1219, -97.2731],
+};
+
+// Waypoints approximating the Colorado River course between dams.
+const RIVER_PATH = [
+  [30.7517, -98.4097], // Buchanan
+  [30.7400, -98.3850],
+  [30.7367, -98.3719], // Inks
+  [30.7000, -98.3700],
+  [30.6300, -98.3500],
+  [30.5594, -98.3344], // Wirtz / LBJ
+  [30.5700, -98.3000],
+  [30.5786, -98.2722], // Starcke / Marble Falls
+  [30.5500, -98.1500],
+  [30.4800, -98.0500],
+  [30.4200, -97.9500],
+  [30.3911, -97.9094], // Mansfield / Travis
+  [30.3500, -97.8500],
+  [30.2944, -97.7861], // Miller / Austin
+  [30.2500, -97.6000],
+  [30.1219, -97.2731], // Bastrop
+];
+
 const tip = d3.select("#tip");
 function showTip(html, evt) {
   tip.html(html)
@@ -45,6 +77,123 @@ function classifyGate(text) {
   if (/\b\d+\s+gate/.test(t) || t.includes("opened") || t.includes("releasing")) return "bad";
   if (t.includes("possible") || t.includes("may") || t.includes("monitor")) return "warn";
   return "warn";
+}
+
+// ---------- Map view (Leaflet) ----------
+let mapInstance = null;
+let mapLayers = { markers: [], lines: [] };
+
+function initMap() {
+  if (!window.L) return null;
+  mapInstance = L.map("map", {
+    zoomControl: true,
+    scrollWheelZoom: false,
+    attributionControl: true,
+  }).setView([30.55, -98.0], 9);
+
+  L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
+    subdomains: "abcd",
+    maxZoom: 18,
+  }).addTo(mapInstance);
+
+  return mapInstance;
+}
+
+function renderMap(damsData) {
+  if (!damsData?.records) return;
+  if (!window.L) return;
+  if (!mapInstance) {
+    if (!initMap()) return;
+  }
+
+  const byDam = new Map(damsData.records.map(r => [r.dam, r]));
+
+  // Clear previous layers
+  mapLayers.markers.forEach(m => mapInstance.removeLayer(m));
+  mapLayers.lines.forEach(l => mapInstance.removeLayer(l));
+  mapLayers.markers = [];
+  mapLayers.lines = [];
+
+  // Compute an overall "system risk" from gate statuses (used to color river segments)
+  const statuses = damsData.records.map(r => classifyGate(r.gateOps));
+  const systemRisk = statuses.includes("bad") ? "bad" : statuses.includes("warn") ? "warn" : "good";
+  const flowColor = systemRisk === "bad" ? "#f87171" : systemRisk === "warn" ? "#fbbf24" : "#5ec8f7";
+
+  // River line as one continuous polyline through the chain.
+  const baseLine = L.polyline(RIVER_PATH, {
+    color: flowColor,
+    weight: 4,
+    opacity: 0.55,
+    lineCap: "round",
+    lineJoin: "round",
+    className: "river-flow-line",
+  }).addTo(mapInstance);
+  mapLayers.lines.push(baseLine);
+
+  // Underlay — a thicker, more transparent line for a glow effect
+  const glowLine = L.polyline(RIVER_PATH, {
+    color: flowColor,
+    weight: 12,
+    opacity: 0.15,
+    lineCap: "round",
+    lineJoin: "round",
+  }).addTo(mapInstance);
+  mapLayers.lines.push(glowLine);
+
+  // Dam markers
+  LAKES.forEach(d => {
+    const rec = byDam.get(d.dam);
+    const coords = DAM_COORDS[d.dam];
+    if (!rec || !coords) return;
+
+    const gateClass = classifyGate(rec.gateOps);
+    const color =
+      gateClass === "bad"  ? "#f87171" :
+      gateClass === "warn" ? "#fbbf24" :
+                              "#34d399";
+
+    // Storage lakes get a bigger marker so the visual hierarchy matches importance.
+    const baseR = d.kind === "storage" ? 13 : 9;
+
+    const marker = L.circleMarker(coords, {
+      radius: baseR,
+      color: "#ffffff",
+      weight: 2,
+      opacity: 0.95,
+      fillColor: color,
+      fillOpacity: 0.92,
+      className: gateClass === "good" ? "dam-marker" : "dam-marker dam-marker-active",
+    }).addTo(mapInstance);
+
+    // Soft outer halo
+    const halo = L.circleMarker(coords, {
+      radius: baseR + 8,
+      color: color,
+      weight: 0,
+      fillColor: color,
+      fillOpacity: 0.14,
+      interactive: false,
+    }).addTo(mapInstance);
+
+    const head = rec.head;
+    const tail = rec.tail;
+    const popup = `
+      <div class="tip-title">${d.displayDam ?? d.dam} Dam · Lake ${d.lake}</div>
+      <div class="tip-row"><span>head</span><span>${head?.toFixed(2) ?? "—"} ft</span></div>
+      <div class="tip-row"><span>tail</span><span>${(tail != null && tail > 1) ? tail.toFixed(2) + " ft" : "—"}</span></div>
+      <div class="tip-row"><span>conservation</span><span>${d.conservation} ft</span></div>
+      <div class="tip-row"><span>flood pool</span><span>${d.flood} ft</span></div>
+      <div style="margin-top:6px;color:var(--ink-dim);font-size:11px">${rec.gateOps ?? ""}</div>
+      <div style="margin-top:6px;color:var(--ink-mute);font-size:10px">Updated ${formatTime(rec.lastDataUpdate)}</div>
+    `;
+    marker.bindPopup(popup, { maxWidth: 320, closeButton: true });
+    marker.bindTooltip(`${d.lake} · ${head?.toFixed(2) ?? "—"} ft`, {
+      direction: "top", offset: [0, -baseR - 4], opacity: 0.95,
+    });
+
+    mapLayers.markers.push(marker, halo);
+  });
 }
 
 // ---------- Highland Lakes chain ----------
@@ -815,6 +964,7 @@ function nowClock() {
 async function update() {
   try {
     const bundle = await fetchAll();
+    renderMap(bundle.dams);
     renderChain(bundle.dams);
     renderRivers(bundle.forecast_sites);
     renderRain(bundle.rainfall);
@@ -841,5 +991,8 @@ setInterval(update, REFRESH_MS);
 let resizeTimer;
 window.addEventListener("resize", () => {
   clearTimeout(resizeTimer);
-  resizeTimer = setTimeout(update, 200);
+  resizeTimer = setTimeout(() => {
+    mapInstance?.invalidateSize();
+    update();
+  }, 200);
 });
