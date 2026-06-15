@@ -490,6 +490,17 @@ footer a:hover { color: var(--accent); }
   border-bottom: 1px solid rgba(94, 200, 247, 0.6) !important;
 }
 
+.link-pill-kofi {
+  background: rgba(255, 94, 91, 0.10);
+  border-color: rgba(255, 94, 91, 0.4);
+}
+.link-pill-kofi:hover {
+  background: rgba(255, 94, 91, 0.20) !important;
+  border-color: rgba(255, 94, 91, 0.75) !important;
+  color: #ff8b88 !important;
+  border-bottom: 1px solid rgba(255, 94, 91, 0.75) !important;
+}
+
 /* Learn page sections */
 .learn-section { /* alias = .panel */ }
 .learn-stat-grid {

@@ -447,6 +447,13 @@ function renderChainVertical(root, byDam, W) {
 }
 
 // ---------- River gauges ----------
+const riverColor = pct =>
+  pct >= 1     ? "#ec4899" :
+  pct >= 0.75  ? "#f87171" :
+  pct >= 0.5   ? "#fbbf24" :
+  pct >= 0.25  ? "#5ec8f7" :
+                 "#34d399";
+
 function renderRivers(forecastSites) {
   if (!forecastSites?.sites) return;
   const sites = forecastSites.sites
@@ -471,6 +478,36 @@ function renderRivers(forecastSites) {
   root.selectAll("*").remove();
 
   const W = root.node().clientWidth;
+  if (W < MOBILE_BREAKPOINT) renderRiversMobile(root, sites, W);
+  else                       renderRiversDesktop(root, sites, W);
+
+  d3.select("#kpi-stage .kpi-value").text(`${sites.length} gauges`);
+  const elevated = sites.filter(s => s.pct >= 0.5).length;
+  if (elevated > 0) {
+    d3.select("#kpi-stage").classed("flash", true);
+    setTimeout(() => d3.select("#kpi-stage").classed("flash", false), 600);
+  }
+}
+
+function attachRiverTip(sel) {
+  sel
+    .on("mouseenter", function(event, d) {
+      const html = `
+        <div class="tip-title">${d.location}</div>
+        <div class="tip-row"><span>stage</span><span>${d.stage.toFixed(2)} ft</span></div>
+        <div class="tip-row"><span>flow</span><span>${formatFlow(d.flow)}</span></div>
+        <div class="tip-row"><span>bankfull</span><span>${d.bankfull ?? "—"} ft</span></div>
+        <div class="tip-row"><span>flood stage</span><span>${d.flood} ft</span></div>
+        <div class="tip-row"><span>% of flood</span><span>${(d.pct * 100).toFixed(1)} %</span></div>
+        <div style="margin-top:6px;color:var(--ink-mute);font-size:10px">Updated ${formatTime(d.dt)}</div>
+      `;
+      showTip(html, event);
+    })
+    .on("mousemove", moveTip)
+    .on("mouseleave", hideTip);
+}
+
+function renderRiversDesktop(root, sites, W) {
   const rowH = 28;
   const padTop = 6;
   const labelW = 220;
@@ -482,13 +519,6 @@ function renderRivers(forecastSites) {
   const svg = root.append("svg")
     .attr("width", W).attr("height", H)
     .attr("viewBox", `0 0 ${W} ${H}`);
-
-  const colorFor = pct =>
-    pct >= 1     ? "#ec4899" :
-    pct >= 0.75  ? "#f87171" :
-    pct >= 0.5   ? "#fbbf24" :
-    pct >= 0.25  ? "#5ec8f7" :
-                   "#34d399";
 
   const rows = svg.selectAll(".river-row")
     .data(sites, d => d.location)
@@ -516,11 +546,10 @@ function renderRivers(forecastSites) {
     .attr("x", barX).attr("y", rowH / 2 - 7)
     .attr("width", 0).attr("height", 14)
     .attr("rx", 7).attr("ry", 7)
-    .attr("fill", d => colorFor(d.pct))
+    .attr("fill", d => riverColor(d.pct))
     .transition().duration(550).delay((_, i) => i * 12)
     .attr("width", d => Math.max(2, Math.min(barW, barW * Math.min(1.05, d.pct))));
 
-  // Bankfull tick at d.bankfull / d.flood within the bar
   rows.each(function(d) {
     const g = d3.select(this);
     if (d.bankfull > 0 && d.flood > 0) {
@@ -531,7 +560,6 @@ function renderRivers(forecastSites) {
           .attr("y1", rowH / 2 - 10).attr("y2", rowH / 2 + 10);
       }
     }
-    // Flood marker at the end (100% of flood stage)
     g.append("line").attr("class", "flood-tick")
       .attr("x1", barX + barW).attr("x2", barX + barW)
       .attr("y1", rowH / 2 - 10).attr("y2", rowH / 2 + 10);
@@ -543,29 +571,89 @@ function renderRivers(forecastSites) {
     .attr("text-anchor", "end")
     .text(d => `${d.stage.toFixed(2)} / ${d.flood.toFixed(0)} ft · ${formatFlow(d.flow)}`);
 
-  // Hover
-  rows.on("mouseenter", function(event, d) {
-      const html = `
-        <div class="tip-title">${d.location}</div>
-        <div class="tip-row"><span>stage</span><span>${d.stage.toFixed(2)} ft</span></div>
-        <div class="tip-row"><span>flow</span><span>${formatFlow(d.flow)}</span></div>
-        <div class="tip-row"><span>bankfull</span><span>${d.bankfull ?? "—"} ft</span></div>
-        <div class="tip-row"><span>flood stage</span><span>${d.flood} ft</span></div>
-        <div class="tip-row"><span>% of flood</span><span>${(d.pct * 100).toFixed(1)} %</span></div>
-        <div style="margin-top:6px;color:var(--ink-mute);font-size:10px">Updated ${formatTime(d.dt)}</div>
-      `;
-      showTip(html, event);
-    })
-    .on("mousemove", moveTip)
-    .on("mouseleave", hideTip);
+  attachRiverTip(rows);
+}
 
-  d3.select("#kpi-stage .kpi-value").text(`${sites.length} gauges`);
+function renderRiversMobile(root, sites, W) {
+  // Stacked layout: each gauge gets two lines — name+stage+pct on top,
+  // full-width bar below. Eliminates the squeezed bar that desktop
+  // layout produces on narrow viewports.
+  const rowH = 46;
+  const padTop = 4;
+  const padX = 0;
+  const nameY = 16;
+  const statsY = 16;
+  const barY = 28;
+  const barH = 10;
+  const barX = padX;
+  const barW = W - 2 * padX;
+  const H = padTop + sites.length * rowH + 8;
 
-  const elevated = sites.filter(s => s.pct >= 0.5).length;
-  if (elevated > 0) {
-    d3.select("#kpi-stage").classed("flash", true);
-    setTimeout(() => d3.select("#kpi-stage").classed("flash", false), 600);
-  }
+  const svg = root.append("svg")
+    .attr("width", W).attr("height", H)
+    .attr("viewBox", `0 0 ${W} ${H}`);
+
+  const rows = svg.selectAll(".river-row")
+    .data(sites, d => d.location)
+    .join("g")
+      .attr("class", "river-row")
+      .attr("transform", (_, i) => `translate(0, ${padTop + i * rowH})`);
+
+  rows.append("rect")
+    .attr("class", "river-bg")
+    .attr("x", 0).attr("y", 0).attr("width", W).attr("height", rowH - 6);
+
+  rows.append("text")
+    .attr("class", "river-name")
+    .attr("x", padX).attr("y", nameY)
+    .text(d => d.location);
+
+  rows.append("text")
+    .attr("class", "river-stats")
+    .attr("x", W - padX).attr("y", statsY)
+    .attr("text-anchor", "end")
+    .text(d => `${d.stage.toFixed(2)} ft · ${formatFlow(d.flow)}`);
+
+  rows.append("rect")
+    .attr("class", "river-track")
+    .attr("x", barX).attr("y", barY)
+    .attr("width", barW).attr("height", barH)
+    .attr("rx", barH / 2).attr("ry", barH / 2);
+
+  rows.append("rect")
+    .attr("class", "river-bar")
+    .attr("x", barX).attr("y", barY)
+    .attr("width", 0).attr("height", barH)
+    .attr("rx", barH / 2).attr("ry", barH / 2)
+    .attr("fill", d => riverColor(d.pct))
+    .transition().duration(550).delay((_, i) => i * 10)
+    .attr("width", d => Math.max(2, Math.min(barW, barW * Math.min(1.05, d.pct))));
+
+  rows.each(function(d) {
+    const g = d3.select(this);
+    if (d.bankfull > 0 && d.flood > 0) {
+      const xb = barX + barW * (d.bankfull / d.flood);
+      if (xb > barX && xb < barX + barW) {
+        g.append("line").attr("class", "bankfull-tick")
+          .attr("x1", xb).attr("x2", xb)
+          .attr("y1", barY - 3).attr("y2", barY + barH + 3);
+      }
+    }
+    g.append("line").attr("class", "flood-tick")
+      .attr("x1", barX + barW).attr("x2", barX + barW)
+      .attr("y1", barY - 3).attr("y2", barY + barH + 3);
+
+    // Tiny "% of flood" label at end of row (right-aligned, small)
+    g.append("text")
+      .attr("class", "river-stats")
+      .attr("x", W - padX).attr("y", barY + barH + 14)
+      .attr("text-anchor", "end")
+      .attr("font-size", 10)
+      .attr("fill", riverColor(d.pct))
+      .text(`${(d.pct * 100).toFixed(0)}% of flood`);
+  });
+
+  attachRiverTip(rows);
 }
 
 function formatFlow(f) {
