@@ -26,7 +26,85 @@
   <meta name="twitter:image:alt" content="LCRA Hydromet dashboard preview." />
 
   <meta name="theme-color" content="#060912" />
+  <meta name="author" content="Kenny Gorman" />
+  <meta name="robots" content="index, follow, max-image-preview:large" />
+  <link rel="canonical" href="https://lcra-hydromet.onrender.com/" />
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 3 C 8 15, 6 21, 16 29 C 26 21, 24 15, 16 3 Z' fill='%235ec8f7'/%3E%3C/svg%3E" />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": "https://lcra-hydromet.onrender.com/#website",
+        "name": "LCRA Hydromet",
+        "alternateName": "Lower Colorado River Authority Hydromet Dashboard",
+        "url": "https://lcra-hydromet.onrender.com/",
+        "description": "Real-time water levels, dam operations, river gauges, and rainfall for the Lower Colorado River basin.",
+        "inLanguage": "en-US",
+        "publisher": { "@id": "https://lcra-hydromet.onrender.com/#person" }
+      },
+      {
+        "@type": "Person",
+        "@id": "https://lcra-hydromet.onrender.com/#person",
+        "name": "Kenny Gorman",
+        "url": "https://kennygorman.dev",
+        "jobTitle": "Head of Streaming Products",
+        "worksFor": { "@type": "Organization", "name": "MongoDB", "url": "https://www.mongodb.com/" },
+        "sameAs": [
+          "https://www.linkedin.com/in/kgorman/",
+          "https://github.com/kgorman",
+          "https://kennygorman.dev",
+          "https://ko-fi.com/kgorman"
+        ]
+      },
+      {
+        "@type": "Dataset",
+        "@id": "https://lcra-hydromet.onrender.com/#dataset",
+        "name": "LCRA Highland Lakes live hydrology",
+        "description": "Real-time elevation, river stage and flow, rainfall, and floodgate operations across the Highland Lakes chain and the Lower Colorado River basin in Texas. Sourced from LCRA Hydromet with no caching.",
+        "url": "https://lcra-hydromet.onrender.com/api/all",
+        "keywords": ["LCRA", "Highland Lakes", "Lake Travis", "Lake Buchanan", "Colorado River", "Texas", "floodgate operations", "river gauge", "rainfall", "hydrology"],
+        "license": "https://www.lcra.org/",
+        "isAccessibleForFree": true,
+        "creator": {
+          "@type": "Organization",
+          "name": "Lower Colorado River Authority",
+          "url": "https://www.lcra.org/"
+        },
+        "publisher": { "@id": "https://lcra-hydromet.onrender.com/#person" },
+        "distribution": [
+          { "@type": "DataDownload", "encodingFormat": "application/json", "contentUrl": "https://lcra-hydromet.onrender.com/api/all", "name": "Bundle of all endpoints" },
+          { "@type": "DataDownload", "encodingFormat": "application/json", "contentUrl": "https://lcra-hydromet.onrender.com/api/dams", "name": "Highland Lakes dams + floodgate ops" },
+          { "@type": "DataDownload", "encodingFormat": "application/json", "contentUrl": "https://lcra-hydromet.onrender.com/api/stage_flow", "name": "River stage and flow gauges" },
+          { "@type": "DataDownload", "encodingFormat": "application/json", "contentUrl": "https://lcra-hydromet.onrender.com/api/rainfall", "name": "Rainfall stations" },
+          { "@type": "DataDownload", "encodingFormat": "application/json", "contentUrl": "https://lcra-hydromet.onrender.com/api/lake_levels", "name": "All lake-level gauges" },
+          { "@type": "DataDownload", "encodingFormat": "application/json", "contentUrl": "https://lcra-hydromet.onrender.com/api/forecast_sites", "name": "River forecast sites with flood-stage references" },
+          { "@type": "DataDownload", "encodingFormat": "application/json", "contentUrl": "https://lcra-hydromet.onrender.com/api/narrative", "name": "Flood-operations narrative" }
+        ],
+        "spatialCoverage": {
+          "@type": "Place",
+          "name": "Lower Colorado River basin, Texas",
+          "geo": {
+            "@type": "GeoCircle",
+            "geoMidpoint": { "@type": "GeoCoordinates", "latitude": 30.55, "longitude": -98.0 },
+            "geoRadius": "200000"
+          }
+        }
+      },
+      {
+        "@type": "WebPage",
+        "@id": "https://lcra-hydromet.onrender.com/#webpage",
+        "url": "https://lcra-hydromet.onrender.com/",
+        "name": "LCRA Hydromet — Live water levels for the Colorado River",
+        "isPartOf": { "@id": "https://lcra-hydromet.onrender.com/#website" },
+        "about": { "@id": "https://lcra-hydromet.onrender.com/#dataset" },
+        "primaryImageOfPage": { "@type": "ImageObject", "url": "https://lcra-hydromet.onrender.com/og-image.png" }
+      }
+    ]
+  }
+  </script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -94,11 +172,17 @@
       </div>
       <div id="map"></div>
       <div class="map-legend">
-        <span class="legend-dot legend-good"></span><span class="legend-label">Gates closed</span>
+        <span class="legend-label" style="color:var(--ink);font-weight:600">Dams:</span>
+        <span class="legend-dot legend-good"></span><span class="legend-label">Closed</span>
         <span class="legend-dot legend-warn"></span><span class="legend-label">Monitoring</span>
-        <span class="legend-dot legend-bad"></span><span class="legend-label">Active ops</span>
+        <span class="legend-dot legend-bad"></span><span class="legend-label">Active</span>
         <span class="legend-spacer"></span>
-        <span class="legend-line"></span><span class="legend-label">River flow (animated downstream)</span>
+        <span class="legend-label" style="color:var(--ink);font-weight:600">Flow into:</span>
+        <span class="legend-line legend-line-calm"></span><span class="legend-label">Calm</span>
+        <span class="legend-line legend-line-above"></span><span class="legend-label">Above normal</span>
+        <span class="legend-line legend-line-elev"></span><span class="legend-label">Elevated</span>
+        <span class="legend-line legend-line-major"></span><span class="legend-label">Major</span>
+        <span class="legend-line legend-line-flood"></span><span class="legend-label">Flood pool</span>
       </div>
     </section>
 

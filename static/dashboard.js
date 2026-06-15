@@ -29,24 +29,15 @@ const DAM_COORDS = {
   Bastrop:   [30.1219, -97.2731],
 };
 
-// Waypoints approximating the Colorado River course between dams.
-const RIVER_PATH = [
-  [30.7517, -98.4097], // Buchanan
-  [30.7400, -98.3850],
-  [30.7367, -98.3719], // Inks
-  [30.7000, -98.3700],
-  [30.6300, -98.3500],
-  [30.5594, -98.3344], // Wirtz / LBJ
-  [30.5700, -98.3000],
-  [30.5786, -98.2722], // Starcke / Marble Falls
-  [30.5500, -98.1500],
-  [30.4800, -98.0500],
-  [30.4200, -97.9500],
-  [30.3911, -97.9094], // Mansfield / Travis
-  [30.3500, -97.8500],
-  [30.2944, -97.7861], // Miller / Austin
-  [30.2500, -97.6000],
-  [30.1219, -97.2731], // Bastrop
+// River segments — each segment runs from one dam to the next downstream
+// dam and is colored by the downstream lake's risk (gate ops + fill).
+const RIVER_SEGMENTS = [
+  { downstream: "Inks",      path: [[30.7517, -98.4097], [30.7400, -98.3850], [30.7367, -98.3719]] },
+  { downstream: "Wirtz",     path: [[30.7367, -98.3719], [30.7000, -98.3700], [30.6300, -98.3500], [30.5594, -98.3344]] },
+  { downstream: "Starcke",   path: [[30.5594, -98.3344], [30.5700, -98.3000], [30.5786, -98.2722]] },
+  { downstream: "Mansfield", path: [[30.5786, -98.2722], [30.5500, -98.1500], [30.4800, -98.0500], [30.4200, -97.9500], [30.3911, -97.9094]] },
+  { downstream: "Miller",    path: [[30.3911, -97.9094], [30.3500, -97.8500], [30.2944, -97.7861]] },
+  { downstream: "Bastrop",   path: [[30.2944, -97.7861], [30.2500, -97.6000], [30.1219, -97.2731]] },
 ];
 
 const tip = d3.select("#tip");
@@ -100,6 +91,37 @@ function initMap() {
   return mapInstance;
 }
 
+function damRisk(rec, lakeDef) {
+  // Returns a 0..1 risk score combining gate operations + range fill.
+  if (!rec || !lakeDef) return 0;
+  const gateClass = classifyGate(rec.gateOps);
+  const gateRisk = gateClass === "bad" ? 1.0 : gateClass === "warn" ? 0.55 : 0;
+  const pct = (rec.head - lakeDef.low) / (lakeDef.flood - lakeDef.low);
+  const fillRisk =
+    pct >= 1.0   ? 1.0  :
+    pct >= 0.95  ? 0.75 :
+    pct >= 0.85  ? 0.45 :
+    pct >= 0.7   ? 0.20 :
+                    0;
+  return Math.max(gateRisk, fillRisk);
+}
+
+function riskColor(r) {
+  if (r >= 0.85) return "#ec4899"; // flood — pink
+  if (r >= 0.60) return "#f87171"; // major risk — red
+  if (r >= 0.35) return "#fbbf24"; // monitoring — amber
+  if (r >= 0.15) return "#5ec8f7"; // elevated — cyan
+  return "#34d399";                 // calm — green
+}
+
+function riskLabel(r) {
+  if (r >= 0.85) return "Flood pool";
+  if (r >= 0.60) return "Major flow";
+  if (r >= 0.35) return "Elevated";
+  if (r >= 0.15) return "Above normal";
+  return "Calm";
+}
+
 function renderMap(damsData) {
   if (!damsData?.records) return;
   if (!window.L) return;
@@ -108,6 +130,7 @@ function renderMap(damsData) {
   }
 
   const byDam = new Map(damsData.records.map(r => [r.dam, r]));
+  const lakeByDam = new Map(LAKES.map(l => [l.dam, l]));
 
   // Clear previous layers
   mapLayers.markers.forEach(m => mapInstance.removeLayer(m));
@@ -115,31 +138,34 @@ function renderMap(damsData) {
   mapLayers.markers = [];
   mapLayers.lines = [];
 
-  // Compute an overall "system risk" from gate statuses (used to color river segments)
-  const statuses = damsData.records.map(r => classifyGate(r.gateOps));
-  const systemRisk = statuses.includes("bad") ? "bad" : statuses.includes("warn") ? "warn" : "good";
-  const flowColor = systemRisk === "bad" ? "#f87171" : systemRisk === "warn" ? "#fbbf24" : "#5ec8f7";
+  // Per-segment colored polylines based on downstream-lake risk.
+  RIVER_SEGMENTS.forEach(seg => {
+    const lakeDef = lakeByDam.get(seg.downstream);
+    const rec = byDam.get(seg.downstream);
+    const r = damRisk(rec, lakeDef);
+    const color = riskColor(r);
 
-  // River line as one continuous polyline through the chain.
-  const baseLine = L.polyline(RIVER_PATH, {
-    color: flowColor,
-    weight: 4,
-    opacity: 0.55,
-    lineCap: "round",
-    lineJoin: "round",
-    className: "river-flow-line",
-  }).addTo(mapInstance);
-  mapLayers.lines.push(baseLine);
+    // Glow underlay
+    const glow = L.polyline(seg.path, {
+      color, weight: 14, opacity: 0.18,
+      lineCap: "round", lineJoin: "round",
+      interactive: false,
+    }).addTo(mapInstance);
+    mapLayers.lines.push(glow);
 
-  // Underlay — a thicker, more transparent line for a glow effect
-  const glowLine = L.polyline(RIVER_PATH, {
-    color: flowColor,
-    weight: 12,
-    opacity: 0.15,
-    lineCap: "round",
-    lineJoin: "round",
-  }).addTo(mapInstance);
-  mapLayers.lines.push(glowLine);
+    // Animated dashed flow line
+    const flow = L.polyline(seg.path, {
+      color, weight: 4.5,
+      opacity: 0.78,
+      lineCap: "round", lineJoin: "round",
+      className: "river-flow-line",
+    }).addTo(mapInstance);
+    flow.bindTooltip(
+      `Flow into Lake ${lakeDef?.lake ?? seg.downstream}: <strong style="color:${color}">${riskLabel(r)}</strong>`,
+      { sticky: true, opacity: 0.95 }
+    );
+    mapLayers.lines.push(flow);
+  });
 
   // Dam markers
   LAKES.forEach(d => {

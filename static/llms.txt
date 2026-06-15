@@ -1,0 +1,43 @@
+# LCRA Hydromet
+
+> A real-time dashboard for the Lower Colorado River basin in Central Texas. Highland Lakes elevations, dam floodgate operations, river gauge stage/flow, and rainfall — sourced directly from LCRA's public Hydromet system with no caching layer. Every endpoint hit is a fresh upstream fetch.
+
+## Live data (machine-readable JSON)
+
+All endpoints return application/json with `Cache-Control: no-store`. No authentication.
+
+- [/api/all](https://lcra-hydromet.onrender.com/api/all): One bundle of all six LCRA endpoints below — preferred for a single round-trip snapshot of the basin.
+- [/api/dams](https://lcra-hydromet.onrender.com/api/dams): Highland Lakes head and tail elevations plus floodgate operation status (Buchanan, Inks, Wirtz/LBJ, Starcke/Marble Falls, Mansfield/Travis, Miller/Austin, Bastrop).
+- [/api/narrative](https://lcra-hydromet.onrender.com/api/narrative): LCRA flood-operations narrative summary, updated when conditions warrant.
+- [/api/forecast_sites](https://lcra-hydromet.onrender.com/api/forecast_sites): River forecast points with current stage, flow, bankfull stage, and flood stage references.
+- [/api/lake_levels](https://lcra-hydromet.onrender.com/api/lake_levels): All lake-level gauges across the chain (including non-dam reading points like 1431 Bridge).
+- [/api/stage_flow](https://lcra-hydromet.onrender.com/api/stage_flow): All river stage and flow gauges (Colorado, Llano, San Saba, Pedernales, etc.).
+- [/api/rainfall](https://lcra-hydromet.onrender.com/api/rainfall): All rainfall stations across the basin with current totals (1 hr, 3 hr, 6 hr, 24 hr, today).
+
+## API schema
+
+- [/openapi.json](https://lcra-hydromet.onrender.com/openapi.json): OpenAPI 3.1 specification for the proxy API.
+- [/docs](https://lcra-hydromet.onrender.com/docs): Interactive Swagger UI.
+- [/redoc](https://lcra-hydromet.onrender.com/redoc): ReDoc API reference.
+
+## Reading material
+
+- [Learn — How the Highland Lakes Work](https://lcra-hydromet.onrender.com/learn): A plain-language primer on the system. Storage vs. pass-through reservoirs, the USACE flood pool at Mansfield Dam, the LCRA Water Management Plan, build timeline, and a "what to watch on the dashboard" guide.
+- [About](https://lcra-hydromet.onrender.com/about): About the dashboard, its author, the open-source stack, and the data source.
+
+## Upstream source
+
+All numerical data originates from [LCRA Hydromet](https://hydromet.lcra.org/), the Lower Colorado River Authority's public network of approximately 275 automated river and weather gauges. This site does not modify, smooth, or republish the data — it only reformats it for human and agent consumption. For official advisories during a flood event defer to the [LCRA Flood](https://www.lcra.org/water/flood/) page and your local emergency management office.
+
+## Source code
+
+- [GitHub: kgorman/lcra-hydromet](https://github.com/kgorman/lcra-hydromet)
+- Stack: FastAPI pass-through proxy, D3 + Leaflet front end, no build step, deployed on Render.
+
+## Author
+
+- [Kenny Gorman](https://kennygorman.dev) — Head of Streaming Products at MongoDB. Co-founder of [Eventador.io](https://eventador.io) (acquired by Cloudera 2020) and [ObjectRocket](https://objectrocket.com) (acquired by Rackspace 2012). Based in Austin, TX.
+- [LinkedIn](https://www.linkedin.com/in/kgorman/)
+- [GitHub](https://github.com/kgorman)
+- [Ko-fi](https://ko-fi.com/kgorman) (support)
+- Sibling project: [RadWeather](https://radweather.net) — a real-time hyperlocal weather app on the same dark theme, also live-data-only.

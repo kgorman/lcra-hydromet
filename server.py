@@ -37,7 +37,25 @@ ENDPOINTS: dict[str, str] = {
     "rainfall": "/api/GetRainfallForAllSites/",
 }
 
-app = FastAPI(title="LCRA Hydromet Dashboard")
+app = FastAPI(
+    title="LCRA Hydromet Dashboard",
+    version="1.0.0",
+    summary="Real-time pass-through proxy for LCRA Hydromet data — Highland Lakes, river gauges, rainfall.",
+    description=(
+        "Public JSON proxy in front of LCRA's Hydromet system (hydromet.lcra.org). "
+        "All endpoints return application/json with Cache-Control: no-store — every request "
+        "hits the upstream LCRA API fresh. No authentication. Designed for direct consumption "
+        "by browsers, agents, dashboards, and downstream pipelines.\n\n"
+        "Upstream source: https://hydromet.lcra.org/  ·  "
+        "Source code: https://github.com/kgorman/lcra-hydromet"
+    ),
+    contact={"name": "Kenny Gorman", "url": "https://kennygorman.dev"},
+    license_info={"name": "Data © LCRA", "url": "https://www.lcra.org/"},
+    openapi_tags=[
+        {"name": "data", "description": "Live LCRA Hydromet data."},
+        {"name": "pages", "description": "Server-rendered HTML pages."},
+    ],
+)
 
 NO_STORE = {
     "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
@@ -51,7 +69,13 @@ async def _fetch(client: httpx.AsyncClient, path: str):
     return r.json()
 
 
-@app.get("/api/all")
+@app.get(
+    "/api/all",
+    tags=["data"],
+    summary="Bundle of all six LCRA endpoints in one round-trip.",
+    description="Returns a JSON object keyed by short endpoint name (dams, narrative, "
+                "forecast_sites, lake_levels, stage_flow, rainfall). Preferred for snapshot fetches.",
+)
 async def proxy_all():
     """One round-trip for the whole dashboard."""
     async with httpx.AsyncClient(timeout=TIMEOUT) as client:
@@ -67,7 +91,12 @@ async def proxy_all():
     return JSONResponse(bundle, headers=NO_STORE)
 
 
-@app.get("/api/{name}")
+@app.get(
+    "/api/{name}",
+    tags=["data"],
+    summary="Proxy one named LCRA endpoint.",
+    description="Valid `name` values: dams, narrative, forecast_sites, lake_levels, stage_flow, rainfall.",
+)
 async def proxy(name: str):
     path = ENDPOINTS.get(name)
     if not path:
@@ -83,12 +112,12 @@ async def proxy(name: str):
 STATIC_DIR = Path(__file__).parent / "static"
 
 
-@app.get("/about")
+@app.get("/about", tags=["pages"], include_in_schema=False)
 async def about_page():
     return FileResponse(STATIC_DIR / "about.html", headers={"Cache-Control": "no-cache, must-revalidate"})
 
 
-@app.get("/learn")
+@app.get("/learn", tags=["pages"], include_in_schema=False)
 async def learn_page():
     return FileResponse(STATIC_DIR / "learn.html", headers={"Cache-Control": "no-cache, must-revalidate"})
 

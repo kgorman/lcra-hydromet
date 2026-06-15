@@ -396,9 +396,14 @@ footer a:hover { color: var(--accent); }
 .legend-spacer { flex: 0 0 12px; }
 .legend-line {
   display: inline-block;
-  width: 28px; height: 2px;
-  background: repeating-linear-gradient(90deg, #5ec8f7 0 6px, transparent 6px 10px);
+  width: 28px; height: 3px;
+  border-radius: 2px;
 }
+.legend-line-calm  { background: #34d399; }
+.legend-line-above { background: #5ec8f7; }
+.legend-line-elev  { background: #fbbf24; }
+.legend-line-major { background: #f87171; }
+.legend-line-flood { background: #ec4899; }
 .legend-label { color: var(--ink-mute); }
 
 /* ---------- topbar nav links (About / Learn) ---------- */
