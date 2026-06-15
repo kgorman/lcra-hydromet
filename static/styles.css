@@ -143,15 +143,16 @@ main {
 #rivers, #rain { width: 100%; }
 
 /* Lake chain cards (built by D3) */
-.dam-card {
-  cursor: default;
-  transition: transform 0.25s ease;
-}
-.dam-card:hover { transform: translateY(-2px); }
+.dam-card { cursor: default; }
 .dam-bg {
   fill: rgba(11, 18, 36, 0.85);
   stroke: rgba(120, 160, 220, 0.25);
   stroke-width: 1;
+  transition: stroke 0.2s ease, fill 0.2s ease;
+}
+.dam-card:hover .dam-bg {
+  stroke: rgba(94, 200, 247, 0.65);
+  fill: rgba(15, 24, 48, 0.92);
 }
 .dam-name {
   font-family: 'Inter', sans-serif;
