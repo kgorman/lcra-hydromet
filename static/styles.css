@@ -62,7 +62,6 @@ body {
   padding: 18px 28px 16px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 24px;
   flex-wrap: wrap;
   border-bottom: 1px solid var(--panel-edge);
@@ -70,6 +69,8 @@ body {
   backdrop-filter: blur(18px) saturate(160%);
   -webkit-backdrop-filter: blur(18px) saturate(160%);
 }
+.topbar .brand { margin-right: 4px; }
+.topbar .nav-links { margin-right: auto; }   /* pins nav left-adjacent to brand, pushes everything after it right */
 
 .brand { display: flex; align-items: center; gap: 14px; }
 .logo { width: 38px; height: 38px; filter: drop-shadow(0 4px 14px rgba(94, 200, 247, 0.4)); }
